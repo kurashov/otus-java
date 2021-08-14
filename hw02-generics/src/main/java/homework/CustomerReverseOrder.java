@@ -1,16 +1,23 @@
 package homework;
 
+import java.util.LinkedList;
 
 public class CustomerReverseOrder {
+    private final LinkedList<Customer> linkedList;
 
-    //todo: 2. надо реализовать методы этого класса
-    //надо подобрать подходящую структуру данных, тогда решение будет в "две строчки"
+    public CustomerReverseOrder() {
+        this.linkedList = new LinkedList<>();
+    }
 
     public void add(Customer customer) {
-
+        linkedList.addFirst(new Customer(customer.getId(), customer.getName(), customer.getScores()));
     }
 
     public Customer take() {
-        return null; // это "заглушка, чтобы скомилировать"
+        Customer polled = linkedList.poll();
+
+        return polled != null
+                ? new Customer(polled.getId(), polled.getName(), polled.getScores())
+                : null;
     }
 }

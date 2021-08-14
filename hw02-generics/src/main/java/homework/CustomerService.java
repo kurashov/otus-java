@@ -1,23 +1,39 @@
 package homework;
 
 
+import java.util.AbstractMap;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.Optional;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 public class CustomerService {
+    private final SortedMap<Customer, String> map;
 
-    //todo: 3. надо реализовать методы этого класса
-    //важно подобрать подходящую Map-у, посмотрите на редко используемые методы, они тут полезны
+    public CustomerService() {
+        this.map = new TreeMap<>(Comparator.comparingLong(Customer::getScores));
+    }
 
     public Map.Entry<Customer, String> getSmallest() {
-        //Возможно, чтобы реализовать этот метод, потребуется посмотреть как Map.Entry сделан в jdk
-        return null; // это "заглушка, чтобы скомилировать"
+        return createMapEntry(map.firstKey(), map.get(map.firstKey()));
     }
 
     public Map.Entry<Customer, String> getNext(Customer customer) {
-        return null; // это "заглушка, чтобы скомилировать"
+        Optional<Customer> keyO = map.keySet().stream().filter(c -> c.getScores() > customer.getScores()).findFirst();
+
+        return keyO.map(value -> createMapEntry(value, map.get(value))).orElse(null);
     }
 
     public void add(Customer customer, String data) {
+        Customer key = new Customer(customer.getId(), customer.getName(), customer.getScores());
+        map.put(key, data);
+    }
 
+    private Map.Entry<Customer, String> createMapEntry(Customer key, String value) {
+        return new AbstractMap.SimpleEntry<>(
+                new Customer(key.getId(), key.getName(), key.getScores()),
+                value
+        );
     }
 }
