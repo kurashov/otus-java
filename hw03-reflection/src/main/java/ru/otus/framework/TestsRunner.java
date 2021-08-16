@@ -2,8 +2,13 @@ package ru.otus.framework;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import ru.otus.framework.pojo.TestMethods;
+import ru.otus.framework.pojo.TestResult;
+import ru.otus.framework.pojo.TestsRunReport;
 
 /**
  * @author akurashov
@@ -15,42 +20,50 @@ public class TestsRunner {
         Constructor<T> constructor = clazz.getConstructor();
 
         TestMethods testMethods = TestsParser.parseMethods(methods);
-        testMethods.getTests()
+        List<TestsRunReport> reports = testMethods.getTests()
                 .stream()
-                //.parallel()
-                .forEach(test -> execute(constructor, testMethods.getBefore(), testMethods.getAfter(), test));
+                .map(test -> execute(constructor, testMethods.getBefore(), testMethods.getAfter(), test))
+                .collect(Collectors.toList());
+
+        reports.forEach(TestsRunReport::print);
     }
 
-    public static <T> void execute(Constructor<T> constructor,
+    public static <T> TestsRunReport execute(Constructor<T> constructor,
             Method before,
             Method after,
             Method test)
     {
-        boolean testPassed = true;
         T testedObject;
         try {
             testedObject = constructor.newInstance();
         } catch (Exception e) {
-            TestsOut.printError(e.getMessage());
-            return;
+            return new TestsRunReport(test.getName(), TestResult.FAIL, Optional.of(e.getMessage()));
         }
+        TestsRunReport testsRunReport = null;
         try {
             before.invoke(testedObject);
             test.invoke(testedObject);
         } catch (Exception e) {
-            testPassed = false;
+            testsRunReport = new TestsRunReport(test.getName(), TestResult.FAIL, Optional.ofNullable(e.getMessage()));
         } finally {
             try {
                 after.invoke(testedObject);
             } catch (Exception e) {
-                TestsOut.printError("Failed during execute @After");
-                testPassed = false;
+                if (testsRunReport != null) {
+                    testsRunReport.setMessageO(Optional.of(testsRunReport.getMessageO().orElse("")
+                            + e.getMessage())
+                    );
+                } else {
+                    testsRunReport = new TestsRunReport(
+                            test.getName(),
+                            TestResult.FAIL,
+                            Optional.ofNullable(e.getMessage())
+                    );
+                }
             }
         }
-        if (testPassed) {
-            TestsOut.printPass(test.getName());
-        } else {
-            TestsOut.printFail(test.getName());
-        }
+        return testsRunReport != null
+                ? testsRunReport
+                : new TestsRunReport(test.getName(), TestResult.PASS, Optional.empty());
     }
 }
