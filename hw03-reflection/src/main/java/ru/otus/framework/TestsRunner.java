@@ -39,31 +39,24 @@ public class TestsRunner {
         } catch (Exception e) {
             return new TestsRunReport(test.getName(), TestResult.FAIL, Optional.of(e.getMessage()));
         }
-        TestsRunReport testsRunReport = null;
+        TestResult testResult = TestResult.PASS;
+        Optional<String> messageO = Optional.empty();
         try {
             before.invoke(testedObject);
             test.invoke(testedObject);
         } catch (Exception e) {
-            testsRunReport = new TestsRunReport(test.getName(), TestResult.FAIL, Optional.ofNullable(e.getMessage()));
+            testResult = TestResult.FAIL;
+            messageO = Optional.ofNullable(e.getMessage());
         } finally {
             try {
                 after.invoke(testedObject);
             } catch (Exception e) {
-                if (testsRunReport != null) {
-                    testsRunReport.setMessageO(Optional.of(testsRunReport.getMessageO().orElse("")
-                            + e.getMessage())
-                    );
-                } else {
-                    testsRunReport = new TestsRunReport(
-                            test.getName(),
-                            TestResult.FAIL,
-                            Optional.ofNullable(e.getMessage())
-                    );
-                }
+                testResult = TestResult.FAIL;
+                messageO = Optional.of(messageO.orElse("")
+                        + Optional.ofNullable(e.getMessage()).orElse("")
+                );
             }
         }
-        return testsRunReport != null
-                ? testsRunReport
-                : new TestsRunReport(test.getName(), TestResult.PASS, Optional.empty());
+        return new TestsRunReport(test.getName(), testResult, messageO);
     }
 }
